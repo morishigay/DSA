@@ -376,10 +376,9 @@ void displayAllSlangWords(TrieNode* root){
 void freeTrie(TrieNode* node){
     if (node == NULL) return;
     for (int i = 0; i < ALPHABET_SIZE; i++){
-        if (node->children[i]){
-            free(node->children[i]);
-        }
+        freeTrie(node->children[i]);
     }
+    if (node->definition) free(node->definition);
     free(node);
 }
 
