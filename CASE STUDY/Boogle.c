@@ -43,6 +43,7 @@ int charToIndex(char c){
 //utility function to map index to character (for displaying)
 char indexToChar(int idx){
     if (idx >= 0 && idx < 26) return 'a' + idx;  // lowercase
+    if (idx == 26) return ' ';
     return '?'; // invalid
 }
 
@@ -60,9 +61,15 @@ void getUserSlangWord(char* slangWord){
         
         //remove trailing newline
         buffer[strcspn(buffer, "\n")] = '\0';
+
+        //copy to slangWord
+        strcpy(slangWord, buffer);
         
         //check if input was truncated (no newline found)
-        if (strchr(buffer, '\n') == NULL && strlen(buffer) == sizeof(buffer) - 1){
+        size_t len = strcspn(buffer, "\n"); //find the position of newline or end of string
+        int trunctated = (buffer[len] == '\0' && len == sizeof(buffer) - 1); //if we reached the end of buffer without finding a newline, it means input was trunctated
+        buffer[len] = '\0'; //ensure null termination just in case
+        if (trunctated){ //if input was trunctated, show error message and clear remaining input
             printf("Input too long. Please limit to %d characters.\n", MAX_DEFINITION - 1);
             //clear remaining input
             int c;
@@ -105,9 +112,15 @@ void getUserDefinition(char* definition){
         
         //remove trailing newline
         buffer[strcspn(buffer, "\n")] = '\0';
+
+        //copy to definition
+        strcpy(definition, buffer);
         
         //check if input was truncated (no newline found)
-        if (strchr(buffer, '\n') == NULL && strlen(buffer) == sizeof(buffer) - 1){
+        size_t len = strcspn(buffer, "\n"); //find the position of newline or end of string
+        int trunctated = (buffer[len] == '\0' && len == sizeof(buffer) - 1); //if we reached the end of buffer without finding a newline, it means input was trunctated
+        buffer[len] = '\0'; //ensure null termination just in case
+        if (trunctated){ //if input was trunctated, show error message and clear remaining input
             printf("Input too long. Please limit to %d characters.\n", MAX_DEFINITION - 1);
             //clear remaining input
             int c;
@@ -116,16 +129,13 @@ void getUserDefinition(char* definition){
         }
 
         //count words in description (handle multiple spaces)
-        int wordCount = 0;
-        char temp[500];
+        int wordCount = 0; //flag for counting words
+        char temp[500]; //with a temporary var, we can use strtok safely without worrying about losing og definition
         strcpy(temp, definition);
 
         char* token = strtok(temp, " ");
         while (token != NULL){
-            //skip empty tokens (caused by multiple spaces)
-            if (strlen(token) > 0){
-                wordCount++;
-            }
+            wordCount++; //any non-NULL token is a valid word
             token = strtok(NULL, " ");
         }
 
@@ -396,9 +406,9 @@ void showMenu(){
                 root = insertSlangWord(root, slangWord, definition);
                 printf("Press enter to continue...\n"); getchar();
                 break;
-            case 2: //search a slang word
+            case 2:{ //search a slang word
                 getUserSearchWord(slangWord, definition);
-                found = searchSlangWord(root, slangWord);
+                TrieNode* found = searchSlangWord(root, slangWord); //declaration variable inside switch needs a block
                 if (!found){
                     printf("There is no \"%s\" in the dictionary.\n", slangWord);
                 } else{
@@ -407,6 +417,7 @@ void showMenu(){
                 }
                 printf("Press enter to continue...\n"); getchar();
                 break;
+            }
             case 3: //view all slang words with a certain prefix
                 getUserPrefix(prefix, 100);
                 if (!isPrefix(root, prefix)){
