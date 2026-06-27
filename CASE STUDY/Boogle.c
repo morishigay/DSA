@@ -149,7 +149,7 @@ void getUserDefinition(char* definition){
 }
 
 //function to get searched word from user
-void getUserSearchWord(char* slangWord, char* definition){
+void getUserSearchWord(char* slangWord){
     int valid = 0;
     do{
         printf("Input a slang word to search: ");
@@ -223,8 +223,12 @@ TrieNode* insertSlangWord(TrieNode* root, const char* slangWord, const char* def
     }
 
     //store new definition
+    if (curr->definition) free(definition);
+    curr->definition = strdup(definition);
+    
+    /* ALTERNATIVE VERS WITHOUT strdup():
     curr->definition = (char*)malloc(strlen(definition) + 1);
-    strcpy(curr->definition, definition);
+    strcpy(curr->definition, definition);*/
 
     //print appropriate message
     if (isUpdate){
@@ -329,7 +333,7 @@ TrieNode* printWordsWithPrefix(TrieNode* root, const char* prefix){
     printf("Words start with \"%s\":\n", prefix);
     for (int i = 0; i < count; i++){
         printf("%d. %s\n", i + 1, result[i]);
-        //do i need this?? --> free(result);
+        free(result[i]);
     }
     return prefixNode;
 }
@@ -406,7 +410,7 @@ void showMenu(){
                 printf("Press enter to continue...\n"); getchar();
                 break;
             case 2:{ //search a slang word
-                getUserSearchWord(slangWord, definition);
+                getUserSearchWord(slangWord);
                 TrieNode* found = searchSlangWord(root, slangWord); //declaration variable inside switch needs a block
                 if (!found){
                     printf("There is no \"%s\" in the dictionary.\n", slangWord);
