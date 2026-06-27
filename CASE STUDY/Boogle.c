@@ -148,25 +148,6 @@ void getUserDefinition(char* definition){
     } while (!valid);
 }
 
-//function to get searched word from user
-void getUserSearchWord(char* slangWord){
-    int valid = 0;
-    do{
-        printf("Input a slang word to search: ");
-        scanf("%s", slangWord);
-        while (getchar() != '\n'); //clear input buffer
-
-        //if the word doesn't exist, show not found message
-        if (strlen(slangWord) <= 1){
-            printf("There is no %s in the dictionary.\n", slangWord);
-            printf("Press enter to continue..."); getchar();
-            return;
-        } else{
-            valid = 1; //valid input
-        }
-    } while (!valid);
-}
-
 //function to search a slang word
 TrieNode* searchSlangWord(TrieNode* root, const char* slangWord){
     //if the trie is empty
@@ -410,7 +391,7 @@ void showMenu(){
                 printf("Press enter to continue...\n"); getchar();
                 break;
             case 2:{ //search a slang word
-                getUserSearchWord(slangWord);
+                getUserSlangWord(slangWord);
                 TrieNode* found = searchSlangWord(root, slangWord); //declaration variable inside switch needs a block
                 if (!found){
                     printf("There is no \"%s\" in the dictionary.\n", slangWord);
