@@ -304,8 +304,7 @@ TrieNode* printWordsWithPrefix(TrieNode* root, const char* prefix){
     int count = 0;
 
     //prepare buffer for building words
-    char buffer[100];
-    strcpy(buffer, prefix); //start with the prefix
+    char* buffer = strdup(prefix); //start with prefix
 
     //collect words
     collectWords(prefixNode, buffer, strlen(prefix), result, &count, 5);
