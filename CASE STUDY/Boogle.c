@@ -63,7 +63,9 @@ void getUserSlangWord(char* slangWord){
         buffer[strcspn(buffer, "\n")] = '\0';
 
         //copy to slangWord
-        strcpy(slangWord, buffer);
+        slangWord = strdup(buffer);
+        /* ALTERNATIVE:
+        strcpy(slangWord, buffer);*/
         
         //check if input was truncated (no newline found)
         size_t len = strcspn(buffer, "\n"); //find the position of newline or end of string
@@ -114,7 +116,9 @@ void getUserDefinition(char* definition){
         buffer[strcspn(buffer, "\n")] = '\0';
 
         //copy to definition
-        strcpy(definition, buffer);
+        definition = strdup(buffer);
+        /* ALTERNATIVE:
+        strcpy(definition, buffer);*/
         
         //check if input was truncated (no newline found)
         size_t len = strcspn(buffer, "\n"); //find the position of newline or end of string
@@ -130,8 +134,10 @@ void getUserDefinition(char* definition){
 
         //count words in description (handle multiple spaces)
         int wordCount = 0; //flag for counting words
+        char* temp = strdup(definition);
+        /* ALTERNATIVE:
         char temp[500]; //with a temporary var, we can use strtok safely without worrying about losing og definition
-        strcpy(temp, definition);
+        strcpy(temp, definition);*/
 
         char* token = strtok(temp, " ");
         while (token != NULL){
