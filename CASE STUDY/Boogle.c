@@ -20,7 +20,7 @@
 typedef struct TrieNode{
     int endOfWord; //1 if end of a slang word, 0 otherwise
     char* definition; //definition of the slang word
-    struct TrieNode* children[ALPHABET_SIZE];
+    struct TrieNode* children[ALPHABET_SIZE]; //array of pointers to child nodes
 } TrieNode;
 
 //function to create a new trie node
@@ -42,13 +42,13 @@ int charToIndex(char c){
 
 //utility function to map index to character (for displaying)
 char indexToChar(int idx){
-    if (idx >= 0 && idx < 26) return 'a' + idx;  // lowercase
+    if (idx >= 0 && idx < 26) return 'a' + idx;  //lowercase
     if (idx == 26) return ' ';
     return '?'; // invalid
 }
 
 //function to get slang word from user
-void getUserSlangWord(char* slangWord){
+void getUserSlangWord(char** slangWord){
     int valid = 0;
     char buffer[MAX_DEFINITION];
     do{
@@ -58,15 +58,10 @@ void getUserSlangWord(char* slangWord){
             printf("Error reading input.\n");
             continue;
         }
-        
+
         //remove trailing newline
         buffer[strcspn(buffer, "\n")] = '\0';
 
-        //copy to slangWord
-        slangWord = strdup(buffer);
-        /* ALTERNATIVE:
-        strcpy(slangWord, buffer);*/
-        
         //check if input was truncated (no newline found)
         size_t len = strcspn(buffer, "\n"); //find the position of newline or end of string
         int trunctated = (buffer[len] == '\0' && len == sizeof(buffer) - 1); //if we reached the end of buffer without finding a newline, it means input was trunctated
@@ -79,20 +74,31 @@ void getUserSlangWord(char* slangWord){
             continue;
         }
 
-        if (strlen(slangWord) <= 1){
+        //so thats why it was running to segmentation fault........ this damn code below me
+        // if (strchr(buffer, '\n') == NULL && strlen(buffer) == sizeof(buffer) - 1){
+        //     printf("Input too long. Please limit to %d characters.\n", MAX_DEFINITION - 1);
+        //     //clear remaining input
+        //     int c;
+        //     while ((c = getchar()) != '\n' && c != EOF);
+        //     continue;
+        // }
+
+        if (strlen(buffer) <= 1){
             printf("Slang word must be more than 1 characters.\n"); //added error message for length
-        } else if (strchr(slangWord, ' ') != NULL){
+        } else if (strchr(buffer, ' ') != NULL){
             printf("Slang word must not contain space.\n"); //added error message for space
         } else{
             //check if all letters
             int allLetters = 1;
-            for (int i = 0; i < strlen(slangWord); i++){
-                if (!isalpha(slangWord[i])){
+            for (int i = 0; i < strlen(buffer); i++){
+                if (!isalpha(buffer[i])){
                     allLetters = 0;
                     break;
                 }
             }
             if (allLetters){
+                if (*slangWord != NULL) free(*slangWord); //free old memory if it exists
+                *slangWord = strdup(buffer);
                 valid = 1; //valid input
             } else{
                 printf("Slang word should only contain letters.\n");
@@ -102,7 +108,7 @@ void getUserSlangWord(char* slangWord){
 }
 
 //function to get definition from user
-void getUserDefinition(char* definition){
+void getUserDefinition(char** definition){
     int valid = 0;
     char buffer[MAX_DEFINITION];
     do{
@@ -111,15 +117,10 @@ void getUserDefinition(char* definition){
             printf("Error reading input.\n");
             continue;
         }
-        
+
         //remove trailing newline
         buffer[strcspn(buffer, "\n")] = '\0';
 
-        //copy to definition
-        definition = strdup(buffer);
-        /* ALTERNATIVE:
-        strcpy(definition, buffer);*/
-        
         //check if input was truncated (no newline found)
         size_t len = strcspn(buffer, "\n"); //find the position of newline or end of string
         int trunctated = (buffer[len] == '\0' && len == sizeof(buffer) - 1); //if we reached the end of buffer without finding a newline, it means input was trunctated
@@ -134,21 +135,22 @@ void getUserDefinition(char* definition){
 
         //count words in description (handle multiple spaces)
         int wordCount = 0; //flag for counting words
-        char* temp = strdup(definition);
-        /* ALTERNATIVE:
-        char temp[500]; //with a temporary var, we can use strtok safely without worrying about losing og definition
-        strcpy(temp, definition);*/
-
-        char* token = strtok(temp, " ");
-        while (token != NULL){
-            wordCount++; //any non-NULL token is a valid word
-            token = strtok(NULL, " ");
+        char* temp = strdup(buffer);
+        if (temp != NULL){
+            char* token = strtok(temp, " ");
+            while (token != NULL){
+                wordCount++; //any non-NULL token is a valid word
+                token = strtok(NULL, " ");
+            }
+            free(temp); //dont forget to free the temp buffer
         }
 
         //if the definition is less than 2 words, show an error message (ts my thing btw)
         if (wordCount <= 2){
             printf("Description must be more than 2 words.\n");
         } else{
+            if (*definition != NULL) free(*definition);
+            *definition = strdup(buffer);
             valid = 1; //valid input
         }
     } while (!valid);
@@ -184,11 +186,8 @@ TrieNode* insertSlangWord(TrieNode* root, const char* slangWord, const char* def
 
     TrieNode* curr = root;
     int len = strlen(slangWord);
+    int isUpdate = 0;
 
-    //check if word already exists
-    TrieNode* existingNode = searchSlangWord(root, slangWord);
-    int isUpdate = (existingNode != NULL);
-    
     //traverse and insert the word
     for (int i = 0; i < len; i++){
         int index = charToIndex(slangWord[i]);
@@ -201,6 +200,9 @@ TrieNode* insertSlangWord(TrieNode* root, const char* slangWord, const char* def
         curr = curr->children[index];
     }
 
+    //after traversal, check if word already exists
+    isUpdate = (curr->endOfWord == 1);
+
     //mark as end of word and store definition
     curr->endOfWord = 1;
 
@@ -210,12 +212,12 @@ TrieNode* insertSlangWord(TrieNode* root, const char* slangWord, const char* def
     }
 
     //store new definition
-    if (curr->definition) free(definition);
+    if (curr->definition) free(curr->definition);
     curr->definition = strdup(definition);
-    
-    /* ALTERNATIVE VERS WITHOUT strdup():
-    curr->definition = (char*)malloc(strlen(definition) + 1);
-    strcpy(curr->definition, definition);*/
+
+    /* ALTERNATIVE VERSION WITHOUT strdup()
+     * curr->definition = (char*)malloc(strlen(definition) + 1);
+     * strcpy(curr->definition, definition);*/
 
     //print appropriate message
     if (isUpdate){
@@ -246,15 +248,17 @@ void getUserPrefix(char* prefix, int maxLength){
     do{
         printf("Input a prefix to be searched: ");
         scanf(" %[^\n]", prefix);  //note the space before % to skip whitespace
-        
+
         //clear input buffer correctly
         int c;
         while ((c = getchar()) != '\n' && c != EOF);
-        
+
         //check if input is empty
         if (strlen(prefix) == 0){
             printf("Prefix cannot be empty. Please try again.\n");
         } else{
+            //if (*prefix != NULL) free(*prefix);
+            //*prefix = strdup(prefix);
             valid = 1;
         }
     } while (!valid);
@@ -264,9 +268,9 @@ void getUserPrefix(char* prefix, int maxLength){
 TrieNode* getPrefixNode(TrieNode* root, const char* prefix){
     TrieNode* curr = root;
     int len = strlen(prefix);
-    
+
     //traverse the trie according to the character of the prefix
-    for (int i = 0; i < len; i++){ 
+    for (int i = 0; i < len; i++){
         int index = charToIndex(prefix[i]);
         if (index == -1) return NULL;
         if (curr->children[index] == NULL) return NULL; //prefix not found
@@ -310,7 +314,11 @@ TrieNode* printWordsWithPrefix(TrieNode* root, const char* prefix){
     int count = 0;
 
     //prepare buffer for building words
-    char* buffer = strdup(prefix); //start with prefix
+    char* buffer = strdup(prefix); //start with the prefix
+
+    /* ALTERNATIVE APPROACH WITH STRCPY():
+    char buffer[100];
+    strcpy(buffer, prefix);*/
 
     //collect words
     collectWords(prefixNode, buffer, strlen(prefix), result, &count, 5);
@@ -319,7 +327,7 @@ TrieNode* printWordsWithPrefix(TrieNode* root, const char* prefix){
     printf("Words start with \"%s\":\n", prefix);
     for (int i = 0; i < count; i++){
         printf("%d. %s\n", i + 1, result[i]);
-        free(result[i]);
+        free(result[i]); //free each allocated string
     }
     return prefixNode;
 }
@@ -327,9 +335,9 @@ TrieNode* printWordsWithPrefix(TrieNode* root, const char* prefix){
 //utility function to check if trie is empty
 int isEmpty(TrieNode* root){
     for (int i = 0; i < ALPHABET_SIZE; i++){
-        if (root->children[i] != NULL) return 0;
+        if (root->children[i] != NULL) return 0; //if any child is not NULL, return 0 (not empty)
     }
-    return 1;
+    return 1; //if all children are NULL, return 1 (empty)
 }
 
 //function to print all slang words (with preorder traversal)
@@ -366,18 +374,19 @@ void displayAllSlangWords(TrieNode* root){
 void freeTrie(TrieNode* node){
     if (node == NULL) return;
     for (int i = 0; i < ALPHABET_SIZE; i++){
-        freeTrie(node->children[i]);
+        freeTrie(node->children[i]); //for every child node that exists, free them
     }
-    if (node->definition) free(node->definition);
-    free(node);
+    if (node->definition) free(node->definition); //if definition is not NULL/exists, free it
+    free(node); //free the node itself
 }
 
 //function to show menu
 void showMenu(){
     int choice;
-    char slangWord[100], definition[500], prefix[100];
+    char* slangWord = NULL;
+    char* definition = NULL;
+    char prefix[100];
     TrieNode* root = createTrieNode();
-    TrieNode* found;
 
     do{
         printf("Menu: \n");
@@ -386,23 +395,25 @@ void showMenu(){
         printf("3. View all slang words with a certain prefix word.\n");
         printf("4. View all slang words.\n");
         printf("5. Exit.\n");
-        scanf("%d", &choice);
+        scanf("%d", &choice); getchar();
 
         switch(choice){
             case 1: //release a new slang word
-                getUserSlangWord(slangWord);
-                getUserDefinition(definition);
-                root = insertSlangWord(root, slangWord, definition);
+                getUserSlangWord(&slangWord);
+                getUserDefinition(&definition);
+                if (slangWord && definition){
+                    root = insertSlangWord(root, slangWord, definition);
+                }
                 printf("Press enter to continue...\n"); getchar();
                 break;
             case 2:{ //search a slang word
-                getUserSlangWord(slangWord);
+                getUserSlangWord(&slangWord);
                 TrieNode* found = searchSlangWord(root, slangWord); //declaration variable inside switch needs a block
                 if (!found){
                     printf("There is no \"%s\" in the dictionary.\n", slangWord);
                 } else{
                     printf("Slang word: %s\n", slangWord);
-                    printf("Definition: %s\n", definition);
+                    printf("Definition: %s\n", found->definition ? found->definition : " ");
                 }
                 printf("Press enter to continue...\n"); getchar();
                 break;
@@ -426,6 +437,8 @@ void showMenu(){
                 break;
         }
     } while (choice != 5);
+    if (slangWord) free(slangWord);
+    if (definition) free(definition);
     freeTrie(root);
 }
 
