@@ -315,6 +315,7 @@ TrieNode* printWordsWithPrefix(TrieNode* root, const char* prefix){
 
     //prepare buffer for building words
     char* buffer = strdup(prefix); //start with the prefix
+    if (buffer == NULL) return prefixNode; //prefix not found
 
     /* ALTERNATIVE APPROACH WITH STRCPY():
     char buffer[100];
@@ -329,6 +330,7 @@ TrieNode* printWordsWithPrefix(TrieNode* root, const char* prefix){
         printf("%d. %s\n", i + 1, result[i]);
         free(result[i]); //free each allocated string
     }
+    free(buffer);
     return prefixNode;
 }
 
@@ -365,8 +367,8 @@ void displayAllSlangWords(TrieNode* root){
     }
 
     printf("List of all slang words in the dictionary:\n");
-    char buffer[100];
-    int count = 1; //start at 1
+    char buffer[100]; //array to store words
+    int count = 0; //start at 0
     printAllSlangWords(root, buffer, 0, &count);
 }
 
